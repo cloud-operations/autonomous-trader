@@ -1,0 +1,26 @@
+import pandas as pd
+import streamlit as st
+from engine import connect, equity, exposure, daily_pnl, paused, set_pause, TARGET, START_CASH, buy
+st.set_page_config(page_title='Sports Agent V1',page_icon='🏟️',layout='wide')
+st.title('🏟️ Autonomous Sports Agent — Paper V1')
+st.warning('PAPER ONLY. No live order execution is implemented. A calibrated independent probability model is required before automatic entries.')
+con=connect()
+a,b,c,d=st.columns(4)
+a.metric('Paper equity',f'${equity(con):.2f}')
+b.metric('Available cash',f"${con.execute('SELECT amount FROM cash').fetchone()[0]:.2f}")
+c.metric('Open exposure',f'${exposure(con):.2f}')
+d.metric('Target',f'${TARGET:.2f}')
+st.progress(min(1,max(0,(equity(con)-START_CASH)/max(.01,TARGET-START_CASH))))
+st.write(f"Daily realized P&L: ${daily_pnl(con):.2f} | Trading {'PAUSED' if paused(con) else 'ACTIVE (paper only)'}")
+if st.button('Resume paper trading' if paused(con) else 'Pause paper trading'):
+    set_pause(con,not paused(con)); st.rerun()
+st.subheader('Open positions')
+st.dataframe(pd.read_sql_query('SELECT * FROM positions ORDER BY opened_at DESC',con),use_container_width=True)
+st.subheader('Discovered sports markets')
+markets=pd.read_sql_query('SELECT * FROM markets ORDER BY updated_at DESC LIMIT 500',con)
+st.dataframe(markets,use_container_width=True)
+st.subheader('Paper decisions')
+st.dataframe(pd.read_sql_query('SELECT * FROM decisions ORDER BY id DESC LIMIT 100',con),use_container_width=True)
+st.subheader('Paper trades')
+st.dataframe(pd.read_sql_query('SELECT * FROM trades ORDER BY id DESC LIMIT 100',con),use_container_width=True)
+st.caption('Prices are quotes, not guaranteed fills. The scanner must run separately: python engine.py. Database shared through DB_PATH.')

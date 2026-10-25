@@ -15,3 +15,26 @@ __pycache__/
 *.db
 *.sqlite3
 .DS_Store
+
+# Local market data
+data/*.db
+data/*.db-*
+
+# Collector logs
+logs/
+
+# Generated research data and caches
+data/
+*.bak
+*.pre_retry.bak
+
+# Local diagnostic output
+game_series.txt
+
+# Generated research data and caches
+data/
+*.bak
+*.pre_retry.bak
+
+# Local diagnostic output
+game_series.txt

@@ -1,22 +1,46 @@
+from decimal import Decimal, InvalidOperation
 
 from trader.providers.kalshi import KalshiProvider
 
 
+def price(value):
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal("0")
+
+
 def main():
     provider = KalshiProvider()
+    markets = provider.get_markets(
+        limit=100,
+        max_pages=10,
+    )
 
-    try:
-        markets = provider.get_markets(
-            limit=100,
-            max_pages=3,
-        )
-    except Exception as exc:
-        print(f"Kalshi request failed: {exc}")
-        return
+    print(f"Total retrieved: {len(markets)}")
 
-    print(f"Retrieved {len(markets)} markets")
+    single_markets = []
+    liquid_markets = []
 
-    for market in markets[:10]:
+    for market in markets:
+        ticker = market.get("ticker", "")
+
+        # Temporarily exclude known combination markets
+        if ticker.startswith("KXMVECROSSCATEGORY"):
+            continue
+
+        single_markets.append(market)
+
+        bid = price(market.get("yes_bid_dollars"))
+        ask = price(market.get("yes_ask_dollars"))
+
+        if Decimal("0") < bid <= ask < Decimal("1"):
+            liquid_markets.append(market)
+
+    print(f"After combination exclusion: {len(single_markets)}")
+    print(f"Markets with two-sided quotes: {len(liquid_markets)}")
+
+    for market in liquid_markets[:20]:
         print(
             market.get("ticker"),
             "|",
@@ -30,4 +54,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
